@@ -1,0 +1,33 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+packages:
+  - nginx
+  - certbot
+  - python3-certbot-nginx
+  - git
+  - curl
+  - ca-certificates
+  - gnupg
+  - iptables-persistent
+
+runcmd:
+  # Node.js 20.x via NodeSource
+  - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  - apt-get install -y nodejs
+  - npm install -g pm2
+
+  # Application directory
+  - mkdir -p /opt/knup
+  - chown -R ubuntu:ubuntu /opt/knup
+
+  # Nginx
+  - systemctl enable --now nginx
+
+  # OCI Ubuntu images default to iptables that only ACCEPT port 22 and REJECT
+  # everything else. Opening 80/443 in the OCI security list is not enough;
+  # the host firewall must also be opened, then persisted across reboots.
+  - iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
+  - iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+  - netfilter-persistent save
