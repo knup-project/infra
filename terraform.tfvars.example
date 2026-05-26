@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars and fill in.
+# terraform.tfvars is gitignored.
+
+tenancy_ocid     = "ocid1.tenancy.oc1..REPLACE"
+user_ocid        = "ocid1.user.oc1..REPLACE"
+fingerprint      = "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
+private_key_path = "~/.oci/oci_api_key.pem"
+region           = "ap-chuncheon-1"
+compartment_ocid = "ocid1.compartment.oc1..REPLACE"
+
+ssh_public_key = "ssh-ed25519 AAAA... user@host"
+
+atp_admin_password = "REPLACE_WITH_STRONG_PASSWORD"
