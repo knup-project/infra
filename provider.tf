@@ -8,11 +8,9 @@ terraform {
     }
   }
 
-  # TODO: replace `namespace` with your OCI Object Storage namespace
-  # (Tenancy details > Object Storage Namespace in the OCI console).
   backend "oci" {
     bucket    = "knup-terraform-state"
-    namespace = "REPLACE_WITH_OCI_NAMESPACE"
+    namespace = "ax59rukgiass"
     key       = "infra/terraform.tfstate"
     region    = "ap-chuncheon-1"
   }
