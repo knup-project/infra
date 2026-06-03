@@ -28,6 +28,8 @@ runcmd:
   # OCI Ubuntu images default to iptables that only ACCEPT port 22 and REJECT
   # everything else. Opening 80/443 in the OCI security list is not enough;
   # the host firewall must also be opened, then persisted across reboots.
-  - iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
-  - iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+  # Insert at the head of INPUT so we land before the REJECT rule regardless
+  # of where it sits in this image revision (it has moved between revisions).
+  - iptables -I INPUT -p tcp --dport 80  -m state --state NEW -j ACCEPT
+  - iptables -I INPUT -p tcp --dport 443 -m state --state NEW -j ACCEPT
   - netfilter-persistent save
