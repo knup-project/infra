@@ -28,6 +28,13 @@ terraform plan
 terraform apply
 ```
 
+## Runbooks
+
+- [`docs/HTTPS.md`](docs/HTTPS.md) — attach a domain + Let's Encrypt cert
+- [`docs/DEPLOY.md`](docs/DEPLOY.md) — clone the app on the VM via deploy key, run under PM2, front with nginx
+- [`docs/ATP-DB.md`](docs/ATP-DB.md) — download ATP wallet, connect from Node.js via `oracledb`
+- [`docs/CI-SECRETS.md`](docs/CI-SECRETS.md) — secrets the GitHub Actions workflow expects
+
 ## Layout
 
 | File | Purpose |
