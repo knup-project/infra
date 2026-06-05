@@ -13,23 +13,38 @@ packages:
   - iptables-persistent
 
 runcmd:
-  # Node.js 20.x via NodeSource
-  - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-  - apt-get install -y nodejs
-  - npm install -g pm2
+  # --- Swap: E2.1.Micro has only 1 GB RAM. A 2 GB swapfile keeps the JVM
+  #     (Spring Boot) + MySQL container from OOM-killing each other. ---
+  - fallocate -l 2G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=2048
+  - chmod 600 /swapfile
+  - mkswap /swapfile
+  - swapon /swapfile
+  - bash -c 'echo "/swapfile none swap sw 0 0" >> /etc/fstab'
+  - sysctl -w vm.swappiness=20
+  - bash -c 'echo "vm.swappiness=20" > /etc/sysctl.d/99-knup.conf'
 
-  # Application directory
+  # --- Docker Engine + Compose plugin (official repo; arch-agnostic so this
+  #     also works if the shape is later switched to ARM A1.Flex) ---
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - bash -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" > /etc/apt/sources.list.d/docker.list'
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  - systemctl enable --now docker
+  - usermod -aG docker ubuntu
+
+  # --- Application directory ---
   - mkdir -p /opt/knup
   - chown -R ubuntu:ubuntu /opt/knup
 
-  # Nginx
+  # --- Nginx (reverse proxy in front of the backend container) ---
   - systemctl enable --now nginx
 
-  # OCI Ubuntu images default to iptables that only ACCEPT port 22 and REJECT
-  # everything else. Opening 80/443 in the OCI security list is not enough;
-  # the host firewall must also be opened, then persisted across reboots.
-  # Insert at the head of INPUT so we land before the REJECT rule regardless
-  # of where it sits in this image revision (it has moved between revisions).
+  # --- Host firewall: OCI Ubuntu images default to iptables that only ACCEPT
+  #     port 22 and REJECT the rest. Opening 80/443 in the OCI security list is
+  #     not enough; open them on the host too and persist across reboots.
+  #     Insert at the head of INPUT to land before the REJECT rule. ---
   - iptables -I INPUT -p tcp --dport 80  -m state --state NEW -j ACCEPT
   - iptables -I INPUT -p tcp --dport 443 -m state --state NEW -j ACCEPT
   - netfilter-persistent save

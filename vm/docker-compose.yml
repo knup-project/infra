@@ -1,0 +1,43 @@
+# QuizFlow backend stack on the OCI VM.
+# Copy vm/.env.example to /opt/knup/.env and fill in secrets, then:
+#   cd /opt/knup && docker compose pull && docker compose up -d
+#
+# The backend image is built & pushed to ghcr.io by the backend repo's CI.
+# Until that pipeline exists, build locally and `docker compose up -d --build`
+# against a checkout of the backend source instead of pulling.
+services:
+  backend:
+    image: ghcr.io/knup-project/backend:latest
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/knup?serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
+      SPRING_DATASOURCE_USERNAME: "${DB_USER:-knup}"
+      SPRING_DATASOURCE_PASSWORD: "${DB_PASSWORD:?set DB_PASSWORD in /opt/knup/.env}"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+    # Bind to loopback only: nginx on the host is the sole entrypoint (443->8080).
+    ports:
+      - "127.0.0.1:${BACKEND_HOST_PORT:-8080}:8080"
+
+  mysql:
+    image: mysql:8
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: "knup"
+      MYSQL_USER: "${DB_USER:-knup}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:?set DB_PASSWORD in /opt/knup/.env}"
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in /opt/knup/.env}"
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+    # Not published to the host — only reachable on the compose network as `mysql`.
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  mysql_data:

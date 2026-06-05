@@ -33,17 +33,6 @@ variable "instance_shape" {
   default = "VM.Standard.E2.1.Micro"
 }
 
-variable "atp_db_name" {
-  type    = string
-  default = "knupdb"
-}
-
-variable "atp_display_name" {
-  type    = string
-  default = "KNUP-ATP"
-}
-
-variable "atp_admin_password" {
-  type      = string
-  sensitive = true
-}
+# NOTE: The database is no longer a managed Oracle ATP. MySQL 8 runs as a
+# Docker container on the VM (see vm/docker-compose.yml), so DB credentials are
+# VM-side secrets in /opt/knup/.env — NOT Terraform variables.
