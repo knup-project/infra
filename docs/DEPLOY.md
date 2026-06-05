@@ -1,128 +1,87 @@
 # App deployment
 
-Brings up the Node.js app on the VM behind nginx, managed by PM2.
+Brings up the **Spring Boot backend + MySQL** on the VM with Docker Compose,
+behind nginx. cloud-init already installed Docker + the compose plugin.
 
-Assumptions (set by earlier choices):
-- App lives in a **private GitHub repo**, accessed via a **deploy key**
-- Start command is `npm start`
-- App listens on `127.0.0.1:3000`
+Assumptions:
+- Backend image is built & pushed to `ghcr.io/knup-project/backend:latest` by
+  the **backend** repo's `Build & Push Backend Image` workflow.
+- The stack is defined in [`vm/docker-compose.yml`](../vm/docker-compose.yml).
+- nginx fronts the backend on `127.0.0.1:8080` (see [`vm/nginx/knup-app.conf`](../vm/nginx/knup-app.conf)).
 
-## 1. Generate a deploy key on the VM
+## 1. Upload compose + env to the VM
 
-On the VM:
-
-```bash
-ssh-keygen -t ed25519 -f ~/.ssh/knup_deploy -C "knup-deploy" -N ""
-cat ~/.ssh/knup_deploy.pub
-```
-
-Copy the public key output.
-
-## 2. Register the deploy key in GitHub
-
-In your **app** repo (not infra) on GitHub:
-- Settings → Deploy keys → **Add deploy key**
-- Title: `knup-vm`
-- Key: paste the public key from step 1
-- Allow write access: **leave unchecked** (read-only is enough for pull)
-
-Tell SSH which key to use for github.com:
+From your PC (replace the IP with the current `instance_public_ip` output):
 
 ```bash
-cat >> ~/.ssh/config <<'EOF'
-Host github.com
-  HostName github.com
-  User git
-  IdentityFile ~/.ssh/knup_deploy
-  IdentitiesOnly yes
-EOF
-chmod 600 ~/.ssh/config
-
-# verify
-ssh -T git@github.com
-# expected: "Hi <user>/<repo>! You've successfully authenticated..."
+scp vm/docker-compose.yml ubuntu@144.24.92.17:/opt/knup/docker-compose.yml
+scp vm/.env.example       ubuntu@144.24.92.17:/opt/knup/.env
 ```
 
-## 3. Clone the app
+On the VM, fill in real secrets and lock the file down:
 
 ```bash
-sudo mkdir -p /opt/knup/app
-sudo chown ubuntu:ubuntu /opt/knup/app
-git clone git@github.com:YOUR_ORG/YOUR_APP.git /opt/knup/app
-cd /opt/knup/app
-npm ci
+nano /opt/knup/.env        # set DB_PASSWORD, DB_ROOT_PASSWORD
+chmod 600 /opt/knup/.env
 ```
 
-Put any environment variables in `/opt/knup/app/.env` (or wherever your app reads them). **Never commit `.env`.**
+## 2. Authenticate to GitHub Container Registry
 
-## 4. Bring up the process with PM2
-
-From your PC, upload the PM2 ecosystem file:
-
-```powershell
-scp vm\pm2\ecosystem.config.cjs ubuntu@158.180.93.84:/opt/knup/
-```
-
-On the VM:
+The image is private, so the VM needs a token with `read:packages`. Create a
+GitHub PAT (classic, scope `read:packages`) and on the VM:
 
 ```bash
-sudo mkdir -p /var/log/knup && sudo chown ubuntu:ubuntu /var/log/knup
+echo "$GHCR_TOKEN" | docker login ghcr.io -u <github-username> --password-stdin
+```
+
+(Alternatively, make the `backend` package public in the org's Packages settings
+and skip this step.)
+
+## 3. Bring up the stack
+
+```bash
 cd /opt/knup
-pm2 start ecosystem.config.cjs
-pm2 save
-
-# make PM2 survive reboot
-pm2 startup systemd -u ubuntu --hp /home/ubuntu
-# the previous command prints a `sudo env PATH=...` line — copy and run it
+docker compose pull
+docker compose up -d
+docker compose ps
 ```
 
 Sanity check on the VM:
 
 ```bash
-pm2 status
-curl -sI http://127.0.0.1:3000 | head -3
+curl -sI http://127.0.0.1:8080/actuator/health 2>/dev/null || curl -sI http://127.0.0.1:8080 | head -3
+docker compose logs --tail=50 backend
 ```
 
-## 5. Front it with nginx
+## 4. Front it with nginx
 
-From your PC:
-
-```powershell
-scp vm\nginx\knup-app.conf ubuntu@158.180.93.84:/tmp/
+```bash
+scp vm/nginx/knup-app.conf ubuntu@144.24.92.17:/tmp/
 ```
 
 On the VM:
 
 ```bash
 sudo cp /tmp/knup-app.conf /etc/nginx/sites-available/knup-app
-
-# until you have a domain: tell nginx this is the default vhost so it
-# answers requests sent directly to the IP
+# until a domain exists, answer requests sent directly to the IP
 sudo sed -i 's/server_name yourdomain.com www.yourdomain.com;/server_name _;/' \
   /etc/nginx/sites-available/knup-app
-
 sudo ln -sf /etc/nginx/sites-available/knup-app /etc/nginx/sites-enabled/knup-app
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-From your PC PowerShell:
+From your PC: `curl http://144.24.92.17` should now hit the backend.
 
-```powershell
-curl.exe http://158.180.93.84
-```
+When a domain is ready, follow [HTTPS.md](./HTTPS.md).
 
-You should now see your app's response instead of the nginx welcome page.
+## 5. Deploying new versions
 
-When the domain is ready, follow [HTTPS.md](./HTTPS.md) — that swaps `server_name _` back to your real hostname and adds the certificate.
-
-## 6. Deploying new versions
+After the backend CI pushes a new image:
 
 ```bash
-cd /opt/knup/app
-git pull
-npm ci --omit=dev
-pm2 reload knup-app
+cd /opt/knup
+docker compose pull
+docker compose up -d        # recreates only changed containers
+docker image prune -f
 ```
-
-`pm2 reload` is a zero-downtime restart.

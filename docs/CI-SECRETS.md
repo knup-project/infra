@@ -1,35 +1,34 @@
 # GitHub Actions secrets
 
-`.github/workflows/terraform.yml` consumes these. Set them in:
+## infra repo — `.github/workflows/terraform.yml` (OpenTofu)
 
-GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**.
+Set in: GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**.
 
 | Secret name | Where the value comes from | Notes |
 | --- | --- | --- |
-| `OCI_TENANCY_OCID` | OCI Console → top-right profile → **Tenancy** → "OCID" | Same as `tenancy_ocid` in `terraform.tfvars` |
-| `OCI_USER_OCID` | OCI Console → **My profile** → "OCID" | Same as `user_ocid` |
-| `OCI_FINGERPRINT` | OCI Console → **My profile → API Keys** column "Fingerprint" | Same as `fingerprint` |
-| `OCI_REGION` | OCI home region key, e.g. `ap-chuncheon-1` | Same as `region` |
-| `OCI_COMPARTMENT_OCID` | Identity & Security → Compartments → your compartment OCID | Same as `compartment_ocid` |
-| `OCI_PRIVATE_KEY` | **Full** contents of `~/.oci/oci_api_key.pem`, including the `-----BEGIN/END PRIVATE KEY-----` lines | Multiline. Paste exactly. |
-| `SSH_PUBLIC_KEY` | Contents of `~/.ssh/id_ed25519.pub` (one line) | Same as `ssh_public_key` |
-| `ATP_ADMIN_PASSWORD` | The password you set when creating the ATP DB | Same as `atp_admin_password` |
+| `OCI_TENANCY_OCID` | `tenancy_ocid` in `terraform.tfvars` | OCI Console → profile → Tenancy → OCID |
+| `OCI_USER_OCID` | `user_ocid` | OCI Console → My profile → OCID |
+| `OCI_FINGERPRINT` | `fingerprint` | My profile → API Keys → Fingerprint |
+| `OCI_REGION` | `region`, e.g. `ap-chuncheon-1` | home region |
+| `OCI_COMPARTMENT_OCID` | `compartment_ocid` | here = tenancy root |
+| `OCI_PRIVATE_KEY` | **Full** contents of the OCI API key PEM (`~/.oci/knup_oci_api_key.pem`), incl. BEGIN/END lines | Multiline; paste exactly |
+| `SSH_PUBLIC_KEY` | `ssh_public_key` (the `knup-oci` ed25519 public key) | one line |
+| `STATE_S3_ACCESS_KEY_ID` | OCI **Customer Secret Key** access key (for the S3-compat state backend) | from `~/.oci/knup_s3_state.env` |
+| `STATE_S3_SECRET_ACCESS_KEY` | OCI Customer Secret Key secret | from `~/.oci/knup_s3_state.env` |
 
-## Quick check
+> No more `ATP_ADMIN_PASSWORD` — the database is now a MySQL container on the VM,
+> not a managed Oracle ATP. Its credentials live in the VM's `/opt/knup/.env`.
 
-After adding them all, open a small PR (e.g. tweak a comment in `network.tf`) and confirm:
+Remote state lives in the OCI Object Storage bucket `knup-terraform-state`
+(`backend "s3"` in `provider.tf`), authenticated by the `STATE_S3_*` keys.
 
-- The **plan** job runs and posts a `#### Terraform Plan` comment with `Plan: 0 to add, 0 to change, 0 to destroy.`
-- No "Error: required variable X not set" lines.
+## backend repo — `.github/workflows/docker-image.yml`
 
-If anything is missing, the plan job will say which variable.
+No custom secrets needed. It pushes to `ghcr.io` using the built-in
+`GITHUB_TOKEN` (workflow has `packages: write`).
 
-## After the first CI plan succeeds
+## Quick check (infra)
 
-You can stop applying locally. The CI flow becomes:
-
-1. Branch + edit `.tf`
-2. PR → CI plans and comments diff
-3. Merge to `main` → CI applies
-
-`terraform.tfvars` then only exists locally for one-off manual `terraform plan` / `apply` from your PC. The workflow uses `TF_VAR_*` env vars instead.
+Open a small PR (tweak a comment in `network.tf`) and confirm the **Plan** job
+posts `Plan: 0 to add, 0 to change, 0 to destroy.` with no "required variable
+not set" errors.
