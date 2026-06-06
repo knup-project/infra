@@ -17,6 +17,9 @@ services:
       SPRING_DATASOURCE_USERNAME: "${DB_USER:-knup}"
       SPRING_DATASOURCE_PASSWORD: "${DB_PASSWORD:?set DB_PASSWORD in /opt/knup/.env}"
       SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+      # Google Gemini API key for AI quiz generation. AI endpoints fail gracefully
+      # (AI_SERVICE_ERROR) until a real key is set in /opt/knup/.env.
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
     # Bind to loopback only: nginx on the host is the sole entrypoint (443->8080).
     ports:
       - "127.0.0.1:${BACKEND_HOST_PORT:-8080}:8080"
