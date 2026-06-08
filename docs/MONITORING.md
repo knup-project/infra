@@ -36,8 +36,9 @@ backend:8081/actuator/prometheus ──scrape──▶ Alloy(VM) ──remote_wr
    ssh ubuntu@<backend-ip> 'cd /opt/knup && docker compose --profile monitoring up -d alloy'
    ```
 6. Grafana Cloud → **Dashboards → Import** (데이터소스 = 위 Hosted Prometheus):
-   - JVM (Micrometer): dashboard ID **4701**
-   - Spring Boot Statistics: dashboard ID **6756**
+   - **종합(가장 빠름)**: *Spring Boot 2.1 System Monitor* — dashboard ID **11378** (JVM·HTTP·CPU·GC·스레드를 한 화면에). `application` 변수 = `knup-backend`.
+   - JVM (Micrometer): **4701** / Spring Boot Statistics: **6756**
+   - **우리 서비스 전용 종합 대시보드**: 이 레포의 `grafana/knup-backend-overview.json` 을 *Import → Upload JSON file* 로 올리고 데이터소스를 지정. 요청률·p95/p99·5xx 에러율·JVM 힙/논힙·GC·스레드·CPU·HikariCP 풀을 한 대시보드에 정리해 둠.
 
 ## 알림 (Grafana Cloud Alerting) — 제안서 §11.2 기준 예시
 - API 에러율 > 5% (5분): `sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) / sum(rate(http_server_requests_seconds_count[5m])) > 0.05`
