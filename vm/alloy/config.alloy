@@ -1,0 +1,23 @@
+// Grafana Alloy — scrape the backend's Spring Boot Actuator Prometheus metrics
+// (same compose network, management port 8081) and remote-write to Grafana Cloud.
+// Credentials come from /opt/knup/.env (see infra/docs/MONITORING.md).
+
+prometheus.scrape "backend" {
+  targets = [{
+    __address__      = "backend:8081",
+    __metrics_path__ = "/actuator/prometheus",
+    instance         = "knup-backend",
+  }]
+  scrape_interval = "30s"
+  forward_to      = [prometheus.remote_write.grafanacloud.receiver]
+}
+
+prometheus.remote_write "grafanacloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_PROM_URL")
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_PROM_USER")
+      password = sys.env("GRAFANA_CLOUD_API_KEY")
+    }
+  }
+}

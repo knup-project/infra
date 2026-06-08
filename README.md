@@ -42,6 +42,7 @@ tofu apply
 - [`docs/DEPLOY.md`](docs/DEPLOY.md) — deploy the backend+MySQL stack with Docker Compose, front with nginx
 - [`docs/HTTPS.md`](docs/HTTPS.md) — attach a domain + Let's Encrypt cert
 - [`docs/CI-SECRETS.md`](docs/CI-SECRETS.md) — GitHub Actions secrets for the OpenTofu workflow
+- [`docs/MONITORING.md`](docs/MONITORING.md) — Grafana Cloud (Free) + Alloy metrics on the 1 GB VM
 
 ## Layout
 
