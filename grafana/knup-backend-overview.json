@@ -1,0 +1,117 @@
+{
+  "title": "KNU-P · Backend Overview",
+  "uid": "knup-backend-overview",
+  "tags": ["knup", "spring-boot", "backend"],
+  "schemaVersion": 39,
+  "editable": true,
+  "time": { "from": "now-3h", "to": "now" },
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "query": "prometheus", "hide": 0, "current": {} },
+      { "name": "app", "type": "constant", "query": "knup-backend", "hide": 2, "current": { "text": "knup-backend", "value": "knup-backend" } }
+    ]
+  },
+  "panels": [
+    { "id": 1, "type": "row", "title": "Overview", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 } },
+    {
+      "id": 2, "type": "stat", "title": "요청률 (req/s)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "decimals": 1 } },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "sum(rate(http_server_requests_seconds_count{application=\"$app\"}[1m]))" } ]
+    },
+    {
+      "id": 3, "type": "stat", "title": "p95 응답시간",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "s", "decimals": 3, "thresholds": { "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 0.3 }, { "color": "red", "value": 0.5 } ] }, "color": { "mode": "thresholds" } } },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"$app\"}[5m])))" } ]
+    },
+    {
+      "id": 4, "type": "stat", "title": "5xx 에러율",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "decimals": 2, "thresholds": { "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 0.02 }, { "color": "red", "value": 0.05 } ] }, "color": { "mode": "thresholds" } } },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "sum(rate(http_server_requests_seconds_count{application=\"$app\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_server_requests_seconds_count{application=\"$app\"}[5m])), 0.001)" } ]
+    },
+    {
+      "id": 5, "type": "stat", "title": "Uptime",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "process_uptime_seconds{application=\"$app\"}" } ]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "HTTP 요청률 by status",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 15, "stacking": { "mode": "normal" } } } },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "sum by (status) (rate(http_server_requests_seconds_count{application=\"$app\"}[1m]))", "legendFormat": "{{status}}" } ]
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "응답시간 p50 / p95 / p99",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "histogram_quantile(0.50, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"$app\"}[5m])))", "legendFormat": "p50" },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"$app\"}[5m])))", "legendFormat": "p95" },
+        { "refId": "C", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "histogram_quantile(0.99, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"$app\"}[5m])))", "legendFormat": "p99" }
+      ]
+    },
+    { "id": 8, "type": "row", "title": "JVM / System", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 } },
+    {
+      "id": 9, "type": "timeseries", "title": "JVM Heap (used / max)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "sum(jvm_memory_used_bytes{application=\"$app\",area=\"heap\"})", "legendFormat": "used" },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "sum(jvm_memory_max_bytes{application=\"$app\",area=\"heap\"})", "legendFormat": "max" }
+      ]
+    },
+    {
+      "id": 10, "type": "timeseries", "title": "GC pause rate",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 14 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "sum by (action) (rate(jvm_gc_pause_seconds_sum{application=\"$app\"}[1m]))", "legendFormat": "{{action}}" } ]
+    },
+    {
+      "id": 11, "type": "stat", "title": "Live threads",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 14 },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "jvm_threads_live_threads{application=\"$app\"}" } ]
+    },
+    {
+      "id": 12, "type": "timeseries", "title": "CPU usage (process / system)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "max": 1, "min": 0 } },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "process_cpu_usage{application=\"$app\"}", "legendFormat": "process" },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "system_cpu_usage{application=\"$app\"}", "legendFormat": "system" }
+      ]
+    },
+    {
+      "id": 13, "type": "timeseries", "title": "DB pool (HikariCP)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 22 },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "hikaricp_connections_active{application=\"$app\"}", "legendFormat": "active" },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "hikaricp_connections_idle{application=\"$app\"}", "legendFormat": "idle" },
+        { "refId": "C", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "hikaricp_connections_pending{application=\"$app\"}", "legendFormat": "pending" }
+      ]
+    },
+    {
+      "id": 14, "type": "timeseries", "title": "JVM Non-Heap used",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 22 },
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "sum(jvm_memory_used_bytes{application=\"$app\",area=\"nonheap\"})", "legendFormat": "nonheap" } ]
+    }
+  ]
+}
