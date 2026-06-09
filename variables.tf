@@ -18,6 +18,10 @@ variable "private_key_path" {
 variable "region" {
   type    = string
   default = "ap-chuncheon-1"
+  validation {
+    condition     = can(regex("^[a-z]{2,3}-[a-z]+-[0-9]+$", var.region))
+    error_message = "region must look like an OCI region key, e.g. ap-chuncheon-1, us-ashburn-1."
+  }
 }
 
 variable "compartment_ocid" {
