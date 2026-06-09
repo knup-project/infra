@@ -20,3 +20,10 @@ resource "oci_core_volume_backup_policy_assignment" "app_boot" {
   asset_id  = oci_core_instance.app.boot_volume_id
   policy_id = data.oci_core_volume_backup_policies.bronze.volume_backup_policies[0].id
 }
+
+resource "oci_core_volume_backup_policy_assignment" "frontend_boot" {
+  count = var.enable_volume_backups ? 1 : 0
+
+  asset_id  = oci_core_instance.frontend.boot_volume_id
+  policy_id = data.oci_core_volume_backup_policies.bronze.volume_backup_policies[0].id
+}
