@@ -52,6 +52,20 @@ variable "ssh_private_key_path" {
   default = "~/.ssh/id_ed25519"
 }
 
+# --- Budget alerting -------------------------------------------------------
+# The repo is Always Free; expected monthly cost is $0. budget_alert_emails
+# being empty is the opt-out: cost-control.tf creates nothing in that case.
+# Set it to one or more addresses to provision the budget + 1%-actual alert.
+variable "budget_amount" {
+  type    = number
+  default = 1
+}
+
+variable "budget_alert_emails" {
+  type    = list(string)
+  default = []
+}
+
 # NOTE: The database is no longer a managed Oracle ATP. MySQL 8 runs as a
 # Docker container on the VM (see vm/docker-compose.yml), so DB credentials are
 # VM-side secrets in /opt/knup/.env — NOT Terraform variables.
