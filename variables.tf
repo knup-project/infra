@@ -33,6 +33,14 @@ variable "instance_shape" {
   default = "VM.Standard.E2.1.Micro"
 }
 
+# Path to the local SSH private key used to reach the VMs. Only referenced by
+# the ssh_command outputs (informational); change here if your key isn't at the
+# default location.
+variable "ssh_private_key_path" {
+  type    = string
+  default = "~/.ssh/id_ed25519"
+}
+
 # NOTE: The database is no longer a managed Oracle ATP. MySQL 8 runs as a
 # Docker container on the VM (see vm/docker-compose.yml), so DB credentials are
 # VM-side secrets in /opt/knup/.env — NOT Terraform variables.
