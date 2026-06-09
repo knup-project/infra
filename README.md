@@ -43,6 +43,7 @@ tofu apply
 - [`docs/HTTPS.md`](docs/HTTPS.md) — attach a domain + Let's Encrypt cert
 - [`docs/CI-SECRETS.md`](docs/CI-SECRETS.md) — GitHub Actions secrets for the OpenTofu workflow
 - [`docs/MONITORING.md`](docs/MONITORING.md) — Grafana Cloud (Free) + Alloy metrics on the 1 GB VM
+- [`docs/POST-MERGE-CHECKLIST.md`](docs/POST-MERGE-CHECKLIST.md) — what changed on the 2026-06-09 sync, what's auto-fixed, what needs a human
 
 ## Layout
 
