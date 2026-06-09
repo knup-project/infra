@@ -66,6 +66,15 @@ variable "budget_alert_emails" {
   default = []
 }
 
+# --- Boot volume backups ---------------------------------------------------
+# When true (default), the predefined Oracle "bronze" backup policy is
+# attached to each VM's boot volume. Bronze = one weekly full backup, kept 4
+# weeks (within Always Free: 5 backups per volume). Set false to detach.
+variable "enable_volume_backups" {
+  type    = bool
+  default = true
+}
+
 # NOTE: The database is no longer a managed Oracle ATP. MySQL 8 runs as a
 # Docker container on the VM (see vm/docker-compose.yml), so DB credentials are
 # VM-side secrets in /opt/knup/.env — NOT Terraform variables.
