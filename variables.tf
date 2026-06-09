@@ -35,6 +35,13 @@ variable "ssh_public_key" {
 variable "instance_shape" {
   type    = string
   default = "VM.Standard.E2.1.Micro"
+  validation {
+    condition = contains(
+      ["VM.Standard.E2.1.Micro", "VM.Standard.A1.Flex"],
+      var.instance_shape,
+    )
+    error_message = "instance_shape must be an OCI Always Free shape (VM.Standard.E2.1.Micro or VM.Standard.A1.Flex)."
+  }
 }
 
 # Path to the local SSH private key used to reach the VMs. Only referenced by
