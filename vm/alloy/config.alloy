@@ -21,3 +21,40 @@ prometheus.remote_write "grafanacloud" {
     }
   }
 }
+
+// --- Logs: ship every container's stdout/stderr to Grafana Cloud Loki ----
+// Requires /var/run/docker.sock mounted into the alloy container and the
+// GRAFANA_CLOUD_LOKI_* env vars filled in /opt/knup/.env (see LOGGING.md).
+// Leaving the env vars empty makes loki.write a no-op endpoint that drops
+// records — safe to leave configured even if you haven't onboarded logs yet.
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  forward_to = [loki.write.grafanacloud.receiver]
+  labels     = { host = "knup-backend" }
+}
+
+loki.write "grafanacloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_LOKI_URL")
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_LOKI_USER")
+      password = sys.env("GRAFANA_CLOUD_API_KEY")
+    }
+  }
+}
