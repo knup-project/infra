@@ -52,11 +52,15 @@ tofu apply
 | `provider.tf` | OCI provider + S3-compatible remote state backend |
 | `variables.tf` | Input variable declarations |
 | `network.tf` | VCN, IGW, route table, security list, subnet |
-| `compute.tf` | VM instance + Ubuntu image lookup |
+| `compute.tf` | Backend VM instance + Ubuntu image lookup |
+| `compute-frontend.tf` | Frontend VM instance (shares image/AD/subnet from compute.tf) |
 | `cloud-init.yaml` | VM bootstrap (Docker + Compose, swap, Nginx, Certbot) |
-| `outputs.tf` | Public IP + SSH helper |
+| `outputs.tf` | Public IPs + SSH helpers |
 | `terraform.tfvars.example` | Template for required input values |
-| `vm/docker-compose.yml` | Backend (ghcr image) + MySQL stack run on the VM |
+| `.terraform.lock.hcl` | Pinned provider versions + hashes (committed) |
+| `vm/docker-compose.yml` | Backend (ghcr image) + MySQL + (optional) Alloy stack |
 | `vm/nginx/knup-app.conf` | nginx reverse proxy (443 -> backend :8080) |
-| `vm/.env.example` | Template for the VM's `/opt/knup/.env` (DB secrets) |
+| `vm/.env.example` | Template for the VM's `/opt/knup/.env` (DB + Grafana Cloud secrets) |
+| `vm/alloy/config.alloy` | Grafana Alloy scrape + remote_write config |
+| `grafana/knup-backend-overview.json` | Importable Grafana dashboard JSON |
 | `.github/workflows/terraform.yml` | OpenTofu CI pipeline |
