@@ -34,6 +34,8 @@ jobs:
       - uses: opentofu/setup-opentofu@v1
         with:
           tofu_version: "1.12.1"
+      - name: fmt -check
+        run: tofu fmt -check -recursive -diff
       - name: Write OCI API key
         env:
           OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
@@ -42,6 +44,7 @@ jobs:
           printf '%s\n' "$OCI_PRIVATE_KEY" > /home/runner/.oci/oci_api_key.pem
           chmod 600 /home/runner/.oci/oci_api_key.pem
       - run: tofu init -input=false
+      - run: tofu validate -no-color
       - name: Plan
         id: plan
         run: tofu plan -no-color -input=false

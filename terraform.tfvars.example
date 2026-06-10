@@ -10,6 +10,9 @@ compartment_ocid = "ocid1.compartment.oc1..REPLACE"
 
 ssh_public_key = "ssh-ed25519 AAAA... user@host"
 
+# Override only if your local SSH key isn't at ~/.ssh/id_ed25519.
+# ssh_private_key_path = "~/.ssh/knup_oci"
+
 # State backend (S3-compatible OCI Object Storage) auth is passed via env, not
 # here: export AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY (an OCI Customer Secret
 # Key) and AWS_REGION before `tofu init`. DB credentials live on the VM in

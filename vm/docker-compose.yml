@@ -58,9 +58,15 @@ services:
     volumes:
       - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
       - alloy_data:/var/lib/alloy/data
+      # Read-only Docker socket: lets Alloy enumerate running containers and
+      # tail their logs. Read-only is enforced by `:ro` — Alloy cannot start
+      # or stop containers through this mount.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       GRAFANA_CLOUD_PROM_URL: "${GRAFANA_CLOUD_PROM_URL:-}"
       GRAFANA_CLOUD_PROM_USER: "${GRAFANA_CLOUD_PROM_USER:-}"
+      GRAFANA_CLOUD_LOKI_URL: "${GRAFANA_CLOUD_LOKI_URL:-}"
+      GRAFANA_CLOUD_LOKI_USER: "${GRAFANA_CLOUD_LOKI_USER:-}"
       GRAFANA_CLOUD_API_KEY: "${GRAFANA_CLOUD_API_KEY:-}"
     depends_on:
       - backend
