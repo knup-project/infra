@@ -3,6 +3,17 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/), 버전은 [SemVer](https://semver.org/lang/ko/)를 따릅니다.
 
 ## [Unreleased]
+### Added
+- OCI Budget + 1% actual-spend 알림 (opt-in, `budget_alert_emails`)
+- Boot volume bronze 백업 정책 자동 attach + MySQL `mysqldump` 스크립트
+- Grafana Cloud Loki로 Docker 컨테이너 로그 전송 (Alloy 확장)
+- `docs/POST-MERGE-CHECKLIST.md`, `docs/COST.md`, `docs/BACKUP.md`,
+  `docs/LOGGING.md` 런북 4종
+- CONTRIBUTING.md + PR/Issue 템플릿, README 아키텍처 다이어그램 + 배지
+### Changed
+- CI plan job: `.terraform` 캐시, sticky PR comment, stale run 자동 취소
+- CI apply job: `.terraform` 캐시 + workflow-level concurrency 가드
+- `outputs.tf`의 ssh 명령어가 `var.ssh_private_key_path` 사용
 ### 계획
 - managed DB/백업 자동화, 무중단 배포(blue-green) 검토 — [로드맵](https://github.com/knup-project/.github/blob/main/docs/ROADMAP.md)
 
