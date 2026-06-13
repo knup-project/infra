@@ -1,7 +1,47 @@
 # knup-infra
 
+[![OpenTofu](https://github.com/knup-project/infra/actions/workflows/terraform.yml/badge.svg)](https://github.com/knup-project/infra/actions/workflows/terraform.yml)
+[![OpenTofu](https://img.shields.io/badge/OpenTofu-1.12-7B42BC?logo=opentofu)](https://opentofu.org/)
+[![OCI provider](https://img.shields.io/badge/oracle%2Foci-~%3E%206.0-F80000?logo=oracle)](https://registry.terraform.io/providers/oracle/oci/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Terraform/OpenTofu-managed infrastructure for the KNUP (QuizFlow) project on
 Oracle Cloud Infrastructure (OCI) Always Free tier.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  user([User]) -->|HTTPS 443| nginx
+
+  subgraph backendVM["Backend VM — E2.1.Micro (Always Free)"]
+    nginx[nginx + Let's Encrypt] -->|:8080| backend[Spring Boot<br/>backend container]
+    backend --> mysql[(MySQL 8<br/>container + volume)]
+    alloy[Grafana Alloy<br/>profile: monitoring] -.metrics+logs.-> backend
+    alloy -.docker.sock.-> mysql
+  end
+
+  subgraph frontendVM["Frontend VM — E2.1.Micro (Always Free)"]
+    fe[Next.js / static]
+  end
+
+  user -->|HTTPS 443| fe
+
+  alloy -->|remote_write| grafana[Grafana Cloud Free<br/>Prom + Loki]
+
+  subgraph oci["OCI Always Free tenancy"]
+    backendVM
+    frontendVM
+    bv1[Boot vol +<br/>bronze backup policy]
+    bv2[Boot vol +<br/>bronze backup policy]
+    state[(Object Storage<br/>knup-terraform-state)]
+    budget[Budget +<br/>actual-spend alert]
+  end
+
+  gh[GitHub Actions<br/>OpenTofu plan/apply] --> state
+  gh -->|API key| backendVM
+  gh -->|API key| frontendVM
+```
 
 ## Overview
 
