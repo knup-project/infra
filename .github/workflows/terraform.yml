@@ -86,6 +86,12 @@ jobs:
       - uses: opentofu/setup-opentofu@v1
         with:
           tofu_version: "1.12.1"
+      - uses: actions/cache@v4
+        with:
+          path: .terraform
+          key: tofu-${{ runner.os }}-${{ hashFiles('.terraform.lock.hcl') }}
+          restore-keys: |
+            tofu-${{ runner.os }}-
       - name: Write OCI API key
         env:
           OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
