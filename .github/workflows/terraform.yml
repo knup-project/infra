@@ -10,6 +10,13 @@ permissions:
   contents: read
   pull-requests: write
 
+# Cancel a stale plan when the PR gets a new push — there's no point
+# finishing a 2-minute plan for a commit the author has already replaced.
+# Apply, conversely, must NEVER be cancelled mid-flight (see the apply job).
+concurrency:
+  group: opentofu-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   # OCI provider auth (API key)
   TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
@@ -34,6 +41,14 @@ jobs:
       - uses: opentofu/setup-opentofu@v1
         with:
           tofu_version: "1.12.1"
+      # Cache the provider plugin tree keyed on the lockfile so re-runs skip
+      # the ~80 MB oracle/oci download. Bust automatically when the lock changes.
+      - uses: actions/cache@v4
+        with:
+          path: .terraform
+          key: tofu-${{ runner.os }}-${{ hashFiles('.terraform.lock.hcl') }}
+          restore-keys: |
+            tofu-${{ runner.os }}-
       - name: fmt -check
         run: tofu fmt -check -recursive -diff
       - name: Write OCI API key
