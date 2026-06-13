@@ -17,3 +17,13 @@ ssh_public_key = "ssh-ed25519 AAAA... user@host"
 # here: export AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY (an OCI Customer Secret
 # Key) and AWS_REGION before `tofu init`. DB credentials live on the VM in
 # /opt/knup/.env (see vm/.env.example), not in Terraform.
+
+# --- Optional: opt-in budget alerting (see docs/COST.md) -------------------
+# Leave empty to skip — nothing is created. Set one or more addresses to
+# provision the OCI budget + 1%-actual alert rule.
+# budget_alert_emails = ["you@example.com"]
+# budget_amount       = 1
+
+# --- Optional: boot-volume backup policy (see docs/BACKUP.md) --------------
+# Default true. Set false to detach the Oracle "bronze" policy.
+# enable_volume_backups = true
